@@ -3,7 +3,7 @@ from transformers import AutoTokenizer
 from datasets import load_dataset
 
 parser = ArgumentParser(description='Tokenize MLM dataset')
-parser.add_argument('dataset_name_or_path', help='Text file containing entity descriptions')
+parser.add_argument('dataset_name_or_path', help='Text file containing entity descriptions. If multiple positional arguments are needed, separated by commas (,)')
 parser.add_argument('--tokenizer', default='distilbert-base-uncased', help='Name of tokenizer to be used')
 parser.add_argument('--size', default='', help='MAximum number of data to be preprocessed')
 parser.add_argument('--num-proc', default=1, type=int, help='Number of threads to work in parallel')
@@ -18,7 +18,8 @@ if __name__ == '__main__':
     return tokenizer(samples['text'], padding='max_length', truncation=True)
 
   print('| Reading dataset')
-  raw_dataset = load_dataset(args.dataset_name_or_path,
+  pos_args = args.dataset_name_or_path.split(',')
+  raw_dataset = load_dataset(*pos_args,
                              split='train[:{}]'.format(args.size),
                              data_files=args.text_file)
   print('| Tokenizing dataset')
