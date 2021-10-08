@@ -20,14 +20,14 @@ if __name__ == '__main__':
   print('| Reading dataset')
   pos_args = args.dataset_name_or_path.split(',')
   raw_dataset = load_dataset(*pos_args,
-                             split='train[:{}]'.format(args.size),
-                             data_files=args.text_file)
+                             script_version='master',
+                             split='train[:{}]'.format(args.size)).shuffle()
   print('| Tokenizing dataset')
   print('| Number of entities: {}'.format(raw_dataset.num_rows))
   dataset = raw_dataset.map(tokenize_text,
-                             batched=True,
-                             num_proc=args.num_proc,
-                             remove_columns=['text'])
+                            batched=True,
+                            num_proc=args.num_proc,
+                            remove_columns=['text'])
   print('| Saving dataset')
   dataset.save_to_disk(args.out_dir)
   print('| Tokenized dataset saved to "{}"'.format(args.out_dir))
