@@ -235,26 +235,26 @@ class KeplerModel(PreTrainedModel):
     ):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        mlm_loss, mlm_logits, mlm_hidden_states, mlm_attentions = self.mlm_head(**mlm_data)
+        mlm_output = self.mlm_head(**mlm_data)
 
         pScore, nScore, ke_loss = None, None, None
         if ke_data is not None:
             pScore, nScore, ke_loss = self.ke_head(**ke_data)
             
         loss = None
-        if ke_loss is not None and mlm_loss is not None:
-            loss = mlm_loss + ke_loss
+        if ke_loss is not None and mlm_output.loss is not None:
+            loss = mlm_output.loss + ke_loss
 
         if not return_dict:
-            output = (mlm_logits, pScore, nScore) + mlm_hidden_states[1:]
+            output = (mlm_output.logits, pScore, nScore) + mlm_output.hidden_states[1:]
             return ((loss,) + output) if loss is not None else output
 
         return KeplerForPreTrainingOutput(
             loss=loss,
-            logits=mlm_logits,
+            logits=mlm_output.logits,
             pScore=pScore,
             nScore=nScore,
-            hidden_states=mlm_hidden_states,
-            attentions=mlm_attentions,
+            hidden_states=mlm_output.hidden_states,
+            attentions=mlm_output.attentions,
         )
     
