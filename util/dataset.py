@@ -17,9 +17,3 @@ class RoundRobinDataset(torch.utils.data.Dataset):
 	def __len__(self):
 		return max(len(self.idx_a), len(self.idx_b))
 
-mlm = load_dataset('./IndoWiki/indowiki_text.txt', split='train')
-ke = load_from_disk('ke_dataset')
-
-train_dataset = RoundRobinDataset(mlm, ke['train'], 'mlm', 'ke')
-test_dataset = RoundRobinDataset(mlm, ke['test'], 'mlm', 'ke')
-
