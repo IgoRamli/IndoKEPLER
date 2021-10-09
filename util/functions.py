@@ -6,7 +6,6 @@ from transformers import (
   AutoModelForMaskedLM,
   Trainer
 )
-from transformers.utils.dummy_pt_objects import AutoModelForMaskedLM
 from model.modeling_kepler import KeplerModel
 from model.configuration_kepler import KeplerConfig
 

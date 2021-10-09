@@ -7,6 +7,7 @@ import torch.nn.functional as F
 
 from transformers import PreTrainedModel, logging
 from transformers.file_utils import ModelOutput
+from transformers.modeling_outputs import MaskedLMOutput
 from transformers.activations import gelu
 from .configuration_kepler import KeplerConfig
 
@@ -107,7 +108,12 @@ class KeplerLMHead(PreTrainedModel):
             output = (prediction_logits,) + encoder_output[1:]
             return ((mlm_loss,) + output) if mlm_loss is not None else output
 
-        return mlm_loss, prediction_logits, encoder_output.hidden_states, encoder_output.attentions
+        return MaskedLMOutput(
+            loss=mlm_loss,
+            logits=prediction_logits,
+            hidden_states=encoder_output.hidden_states,
+            attentions=encoder_output.attentions,
+        )
 
 
 class KeplerKEHead(nn.Module):
