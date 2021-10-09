@@ -6,6 +6,7 @@ from transformers import (
   AutoModel,
   Trainer
 )
+from transformers.utils.dummy_pt_objects import AutoModelForMaskedLM
 from model.modeling_kepler import KeplerModel
 from model.configuration_kepler import KeplerConfig
 
@@ -24,24 +25,34 @@ def get_data_collator(tokenizer):
   return custom_data_collator
 
 def load_model(model_name_or_path):
-  base_model = AutoModel.from_pretrained(model_name_or_path)
+  if 'distilbert' in model_name_or_path:
+    print('| Loading model "{}"'.format(model_name_or_path))
+    mlm_model = AutoModelForMaskedLM.from_pretrained(model_name_or_path)
+    base_model = mlm_model.distilbert
 
-  config = KeplerConfig(embedding_size=base_model.config.dim)
-  model = KeplerModel(config, base_model)
-  return model
+    config = KeplerConfig(embedding_size=base_model.config.dim)
+    model = KeplerModel(config, base_model, mlm_model)
+    return model
+  else:
+    raise NotImplementedError('Only distilbert models can be loaded into KEPLER')
 
 def load_tokenizer(model_name_or_path):
   tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
   return tokenizer
 
 def fetch_shards(dirs):
-  shards = [ load_from_disk(d) for d in dirs ]
-  return concatenate_datasets(shards)
+  shards = []
+  for d in dirs:
+    print('|   Loading {}'.format(d))
+    shards.append(load_from_disk(d))
+  print('|   Concatenating shards')
+  dataset = concatenate_datasets(shards)
+  print('|   Dataset loaded')
+  return dataset
 
 def compile_dataset(mlm_data, ke_data):
-  train_dataset = RoundRobinDataset(mlm_data['train'], ke_data['train'], 'mlm_data', 'ke_data')
-  eval_dataset = RoundRobinDataset(mlm_data['test'], ke_data['test'], 'mlm_data', 'ke_data')
-  return train_dataset, eval_dataset
+  train_dataset = RoundRobinDataset(mlm_data, ke_data, 'mlm_data', 'ke_data')
+  return train_dataset
 
 def prepare_trainer(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
@@ -51,12 +62,11 @@ def prepare_trainer(training_args, args):
   print('| Fetching KE datasets')
   ke = fetch_shards(args.ke_dirs.split(','))
   print('| Combining datasets in round robin fashion')
-  train, eval = compile_dataset(mlm, ke)
+  train = compile_dataset(mlm, ke)
 
   trainer = Trainer(
     model=load_model(args.model_name_or_path),
     args=training_args,
     data_collator=get_data_collator(tokenizer),
-    train_dataset=train,
-    eval_dataset=eval)
+    train_dataset=train)
   return trainer

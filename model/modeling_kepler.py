@@ -201,11 +201,11 @@ class KeplerModel(PreTrainedModel):
     config_class = KeplerConfig
     base_model_prefix = "kepler"
 
-    def __init__(self, config, encoder):
+    def __init__(self, config, encoder, mlm_head):
         super().__init__(config)
 
         self.encoder = encoder
-        self.mlm_head = KeplerLMHead(config, self.encoder)
+        self.mlm_head = mlm_head
         self.ke_head = KeplerKEHead(config, self.encoder)
         self.config = config
 
