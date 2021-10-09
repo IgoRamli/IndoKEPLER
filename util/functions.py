@@ -2,13 +2,12 @@ from datasets import load_from_disk, concatenate_datasets
 from transformers.data.data_collator import DataCollatorForLanguageModeling
 from transformers import AutoModel, AutoTokenizer, training_args
 from transformers import (
-  AutoConfig,
   AutoTokenizer,
   AutoModel,
-  Trainer,
-  TrainingArguments
+  Trainer
 )
-from ..model.modeling_kepler import KeplerConfig, KeplerModel
+from model.modeling_kepler import KeplerModel
+from model.configuration_kepler import KeplerConfig
 
 from .data_collator import DataCollatorForKnowledgeEmbedding
 from .dataset import RoundRobinDataset
@@ -36,30 +35,22 @@ def load_tokenizer(model_name_or_path):
   return tokenizer
 
 def fetch_shards(dirs):
-  shards = [ load_from_disk(dir) for dir in dirs ]
+  shards = [ load_from_disk(d) for d in dirs ]
   return concatenate_datasets(shards)
-
-def fetch_ke_dataset(ke_dirs):
-  return fetch_shards(ke_dirs)
-
-def fetch_mlm_dataset(mlm_dir):
-  mlm = {
-      'train': load_from_disk('{}/train'.format(mlm_dir)),
-      'test': load_from_disk('{}/test'.format(mlm_dir))
-  }
-  return mlm
 
 def compile_dataset(mlm_data, ke_data):
   train_dataset = RoundRobinDataset(mlm_data['train'], ke_data['train'], 'mlm_data', 'ke_data')
   eval_dataset = RoundRobinDataset(mlm_data['test'], ke_data['test'], 'mlm_data', 'ke_data')
   return train_dataset, eval_dataset
 
-def prepare_trainer(args):
-  training_args = TrainingArguments(args)
+def prepare_trainer(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
 
-  mlm = fetch_shards(args.mlm_dirs)
-  ke = fetch_shards(args.ke_dirs)
+  print('| Fetching MLM dataset')
+  mlm = fetch_shards(args.mlm_dirs.split(','))
+  print('| Fetching KE datasets')
+  ke = fetch_shards(args.ke_dirs.split(','))
+  print('| Combining datasets in round robin fashion')
   train, eval = compile_dataset(mlm, ke)
 
   trainer = Trainer(

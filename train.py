@@ -1,12 +1,14 @@
-from transformers import HfArgumentParser
+from transformers import HfArgumentParser, TrainingArguments
 
 from util.functions import prepare_trainer
 
-parser = HfArgumentParser(description='Trains a pretrained model using KEPLER method')
+parser = HfArgumentParser(TrainingArguments)
+parser.add_argument('--model-name-or-path', required=True, help='Model and tokenizer name')
 parser.add_argument('--mlm-dirs', required=True, help='Path to MLM dataset directories, separated by commas (,)')
 parser.add_argument('--ke-dirs', required=True, help='Path to KE dataset directories, separated by commas (,)')
 
 if __name__ == '__main__':
-    args = parser.parse_args()
-    trainer = prepare_trainer(args)
+    training_args, args = parser.parse_args_into_dataclasses()
+    print(args)
+    trainer = prepare_trainer(training_args, args)
     trainer.train(resume_from_checkpoint=True)
