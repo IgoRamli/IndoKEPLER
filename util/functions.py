@@ -1,9 +1,9 @@
 from datasets import load_from_disk, concatenate_datasets
 from transformers.data.data_collator import DataCollatorForLanguageModeling
-from transformers import AutoModel, AutoTokenizer, training_args
 from transformers import (
   AutoTokenizer,
   AutoModel,
+  AutoModelForMaskedLM,
   Trainer
 )
 from transformers.utils.dummy_pt_objects import AutoModelForMaskedLM
