@@ -1,10 +1,11 @@
 import csv
+import os
 
 from argparse import ArgumentParser
 from tqdm import tqdm
 
 parser = ArgumentParser(description='Generate true heads and tails from list of triplets')
-parser.add_argument('--files', default='', help='List of CSV files to be processed, separated by commas (,)')
+parser.add_argument('--data-dir', default='./csv', help='Directory that contains CSV files to be processed')
 parser.add_argument('--out-file-heads', default='true_heads.txt', help='Output file to save true heads')
 parser.add_argument('--out-file-tails', default='true_tails.txt', help='Output file to save true tails')
 
@@ -23,7 +24,7 @@ def generate_true_heads_and_tails(row, true_head, true_tail):
 
 if __name__ == '__main__':
 	args = parser.parse_args()
-	files = args.files.split(',')
+	files = [ '{}/{}'.format(args.data_dir, i) for i in  os.listdir(args.data_dir) ]
 
 	true_head = {}
 	true_tail = {}

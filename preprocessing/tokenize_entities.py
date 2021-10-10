@@ -22,7 +22,7 @@ if __name__ == '__main__':
     return { 'input_ids': tokenized['input_ids'] }
 
   print('| Reading dataset')
-  raw_dataset = load_dataset('csv',
+  raw_dataset = load_dataset('text',
                              split='train',
                              data_files=args.text_file)
   print('| Tokenizing KE entities')

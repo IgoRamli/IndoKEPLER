@@ -1,20 +1,20 @@
 import numpy as np
 import math
 import gc
+import os
 
 from argparse import ArgumentParser
 from datasets import load_from_disk
 from tqdm import tqdm
 from pathlib import Path
 
-parser = ArgumentParser(description='Generate negative sampling')
+parser = ArgumentParser(description='Map entity ids into their tokenized form')
 parser.add_argument('entity_dir', help='Path to directory containing tokenized entity')
-parser.add_argument('--data-dirs', default='', help='Directories of dataset, separated by commas (,)')
-parser.add_argument('--split', required=False, type=int, help='Number of splits in dataset')
+parser.add_argument('--data-dir', default='', help='Directory of dataset to be processed')
 parser.add_argument('--start', required=False, type=int, help='Index of the first shard to be processed')
 parser.add_argument('--end', required=False, type=int, help='Index of the last shard to be processed (inclusive)')
-parser.add_argument('--num-proc', default=1, type=int, help='Number of threads to work in parallel')
-parser.add_argument('--out-dirs', default='', help='Output directories to save dataset to, separated by commas (,)')
+parser.add_argument('--num-proc', default=1, type=int, help='Number of processes to be generated')
+parser.add_argument('--out-dir', default='', help='Output directory to save datasets')
 
 def map_entities(batch, ke_entities):
   return {
@@ -47,9 +47,12 @@ if __name__ == '__main__':
   entities = load_from_disk(args.entity_dir)
 
   ds_mapping = []
-  for ds, new_ds in zip(args.data_dirs.split(','), args.out_dirs.split(',')):
+  ds_splits = os.listdir(args.data_dir)
+  for ds_split in ds_splits:
+    old_ds = '{}/{}'.format(args.data_dir, ds_split)
+    new_ds = '{}/{}'.format(args.out_dir, ds_split)
     for split in range(args.start, args.end+1):
-      mapping = ('{}/{}'.format(ds, split), '{}/{}'.format(new_ds, split))
+      mapping = ('{}/{}'.format(old_ds, split), '{}/{}'.format(new_ds, split))
       ds_mapping.append(mapping)
 
   print('| The following datasets will be processed:')

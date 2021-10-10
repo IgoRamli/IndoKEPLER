@@ -1,26 +1,28 @@
 import json
 from tqdm import tqdm
 import csv
+from pathlib import Path
 from argparse import ArgumentParser
 
 parser = ArgumentParser(description='Convert entities and triplet mappings into a format process-able by preprocess.py')
 parser.add_argument('text_file', help='Text file containing entity descriptions')
 parser.add_argument('train_file', help='Text file containing training data')
+parser.add_argument('valid_file', help='Text file containing validation data')
 parser.add_argument('test_file', help='Text file containing testing data')
-parser.add_argument('--cache-dir', default='./.cache', help='Directory to store intermediate files')
+parser.add_argument('--out-entity-file', default='./entities.txt', help='File name of entity descriptions')
+parser.add_argument('--out-dir', default='./csv', help='Directory to store CSV files')
 
 def get_entity_mappings(in_file, out_file):
-  writer = csv.DictWriter(out_file, fieldnames=['text'])
-  writer.writeheader()
   q_id = {}
   for idx, line in tqdm(enumerate(in_file)):
     data = line.split('\t')
     assert len(data) >= 2
     assert data[0].startswith('Q')
     desc = '\t'.join(data[1:]).strip()
-    q_id[data[0]] = idx-1
-    writer.writerow({ 'text': data[1] })
+    q_id[data[0]] = idx
+    out_file.write(desc + '\n')
   return q_id
+
 
 class TripletConverter():
   def __init__(self, q_id):
@@ -28,9 +30,6 @@ class TripletConverter():
     self.p_id = {}
 
   def convert_triplets(self, in_file, out_file):
-    p_id = {}
-    triplets = []
-
     triplet_fields = ['head', 'relation', 'tail']
     writer = csv.DictWriter(out_file,
                             fieldnames=triplet_fields)
@@ -54,20 +53,26 @@ class TripletConverter():
 if __name__ == '__main__':
   args = parser.parse_args()
 
-  print('Getting ID mappings of entities')
+  print('| Getting ID mappings of entities')
   with open(args.text_file, 'r') as text_file:
-    with open(args.cache_dir + '/text.csv', 'w+') as text_csv:
-      q_id = get_entity_mappings(text_file, text_csv)
+    with open(args.out_entity_file, 'w+') as ent_file:
+      q_id = get_entity_mappings(text_file, ent_file)
   print()
 
+  Path(args.out_dir).mkdir(parents=True, exist_ok=True)
   converter = TripletConverter(q_id)
-  print('Converting train file:')
+  print('| Converting training file:')
   with open(args.train_file, 'r') as in_file:
-    with open(args.cache_dir + '/train.csv', 'w+') as out_file:
+    with open(args.out_dir + '/train.csv', 'w+') as out_file:
       converter.convert_triplets(in_file, out_file)
   print()
-  print('Converting test file:')
+  print('| Converting validation file:')
+  with open(args.valid_file, 'r') as in_file:
+    with open(args.out_dir + '/valid.csv', 'w+') as out_file:
+      converter.convert_triplets(in_file, out_file)
+  print()
+  print('| Converting test file:')
   with open(args.test_file, 'r') as in_file:
-    with open(args.cache_dir + '/test.csv', 'w+') as out_file:
+    with open(args.out_dir + '/test.csv', 'w+') as out_file:
       converter.convert_triplets(in_file, out_file)
   print()
