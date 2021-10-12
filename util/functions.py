@@ -1,4 +1,4 @@
-from datasets import load_from_disk, concatenate_datasets
+from datasets import load_from_disk, concatenate_datasets, DatasetDict
 from transformers.data.data_collator import DataCollatorForLanguageModeling
 from transformers import (
   AutoTokenizer,
@@ -38,34 +38,50 @@ def load_model(model_name_or_path):
 def load_tokenizer(model_name_or_path):
   tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
   return tokenizer
-
-def fetch_shards(dirs):
-  shards = []
-  for d in dirs:
-    print('|   Loading {}'.format(d))
-    shards.append(load_from_disk(d))
-  print('|   Concatenating shards')
-  dataset = concatenate_datasets(shards)
-  print('|   Dataset loaded')
-  return dataset
-
+  
+def fetch_dataset(path):
+  splits = os.listdir(path)
+  return {
+    load_from_disk('{}/{}'.format(path, split)
+    for split in splits
+  }
+  
+def fetch_sharded_dataset(path):
+  splits = os.listdir(path)
+  dataset_dict = {
+    split: concatenate_datasets([
+      load_from_disk(shard_dir)
+      for shard_dir in os.listdir('{}/{}'.format(path, split))
+      if os.path.isdir(shard_dir)
+    ])
+    for split in splits
+  }
+  return DatasetDict(dataset_dict)
+  
 def compile_dataset(mlm_data, ke_data):
-  train_dataset = RoundRobinDataset(mlm_data, ke_data, 'mlm_data', 'ke_data')
-  return train_dataset
+  mlm_splits = set(mlm_data.keys())
+  ke_splits = set(ke_data.keys())
+  splits = mlm_splits.intersection(ke_splits)
+  dataset_dict = {
+    split: RoundRobinDataset(mlm_data[split], ke_data[split], 'mlm_data', 'ke_data')
+    for split in splits
+  }
+  return DatasetDict(dataset_dict)
 
 def prepare_trainer(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
 
   print('| Fetching MLM dataset')
-  mlm = fetch_shards(args.mlm_dirs.split(','))
+  mlm = fetch_dataset(args.mlm_dir)
   print('| Fetching KE datasets')
-  ke = fetch_shards(args.ke_dirs.split(','))
+  ke = fetch_sharded_dataset(args.ke_dir)
   print('| Combining datasets in round robin fashion')
-  train = compile_dataset(mlm, ke)
+  dataset compile_dataset(mlm, ke)
 
   trainer = Trainer(
     model=load_model(args.model_name_or_path),
     args=training_args,
     data_collator=get_data_collator(tokenizer),
-    train_dataset=train)
+    train_dataset=dataset['train'],
+    eval_dataset=dataset['valid'])
   return trainer
