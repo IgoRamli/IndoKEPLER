@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
   for ds in ds_mapping:
     print('| Getting entity candidates')
-    with open('{}/entities.txt'.format(ds[0]), 'r') as ent_file:
+    with open('{}/../entities.txt'.format(ds[0]), 'r') as ent_file:
       entities = ent_file.readlines()
     print('| {} entities found'.format(len(entities)))
     gen_negative_sampling(ds[0], ds[1], args, entities, true_heads, true_tails)
