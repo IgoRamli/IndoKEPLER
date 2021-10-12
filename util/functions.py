@@ -1,3 +1,4 @@
+import os
 from datasets import load_from_disk, concatenate_datasets, DatasetDict
 from transformers.data.data_collator import DataCollatorForLanguageModeling
 from transformers import (
@@ -42,7 +43,7 @@ def load_tokenizer(model_name_or_path):
 def fetch_dataset(path):
   splits = os.listdir(path)
   return {
-    load_from_disk('{}/{}'.format(path, split)
+    split: load_from_disk('{}/{}'.format(path, split)) 
     for split in splits
   }
   
@@ -50,9 +51,9 @@ def fetch_sharded_dataset(path):
   splits = os.listdir(path)
   dataset_dict = {
     split: concatenate_datasets([
-      load_from_disk(shard_dir)
-      for shard_dir in os.listdir('{}/{}'.format(path, split))
-      if os.path.isdir(shard_dir)
+      load_from_disk('{}/{}/{}'.format(path, split, shard_dir)) 
+      for shard_dir in os.listdir('{}/{}'.format(path, split)) 
+      if os.path.isdir('{}/{}/{}'.format(path, split, shard_dir))
     ])
     for split in splits
   }
@@ -76,7 +77,7 @@ def prepare_trainer(training_args, args):
   print('| Fetching KE datasets')
   ke = fetch_sharded_dataset(args.ke_dir)
   print('| Combining datasets in round robin fashion')
-  dataset compile_dataset(mlm, ke)
+  dataset = compile_dataset(mlm, ke)
 
   trainer = Trainer(
     model=load_model(args.model_name_or_path),

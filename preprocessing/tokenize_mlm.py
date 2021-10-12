@@ -59,6 +59,11 @@ if __name__ == '__main__':
   print('|  - Validation size:', valid.num_rows)
   print('|  - Testing size:', test.num_rows)
 
+  # Flatten indices to save memory (See https://discuss.huggingface.co/t/saving-dataset-in-the-current-state-without-cache/5892/9)
+  train.flatten_indices()
+  valid.flatten_indices()
+  test.flatten_indices()
+
   print('| Saving dataset')
   Path(args.out_dir).mkdir(parents=True, exist_ok=True)
   print('|  - Training set')
