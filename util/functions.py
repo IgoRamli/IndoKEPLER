@@ -60,12 +60,10 @@ def fetch_sharded_dataset(path):
   return DatasetDict(dataset_dict)
   
 def compile_dataset(mlm_data, ke_data):
-  mlm_splits = set(mlm_data.keys())
-  ke_splits = set(ke_data.keys())
-  splits = mlm_splits.intersection(ke_splits)
   dataset_dict = {
-    split: RoundRobinDataset(mlm_data[split], ke_data[split], 'mlm_data', 'ke_data')
-    for split in splits
+    'train': RoundRobinDataset(mlm_data['train'], ke_data['train'], 'mlm_data', 'ke_data'),
+    'valid': RoundRobinDataset(mlm_data['valid'], ke_data['valid'], 'mlm_data', 'ke_data', 300),
+    'test': RoundRobinDataset(mlm_data['test'], ke_data['test'], 'mlm_data', 'ke_data')
   }
   return DatasetDict(dataset_dict)
 
@@ -85,4 +83,4 @@ def prepare_trainer(training_args, args):
     data_collator=get_data_collator(tokenizer),
     train_dataset=dataset['train'],
     eval_dataset=dataset['valid'])
-  return trainer
+  return trainer, dataset['train'], dataset['valid']
