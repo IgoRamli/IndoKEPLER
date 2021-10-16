@@ -1,0 +1,3 @@
+[submodule "benchmarks/ke-tasks/graphvite"]
+	path = benchmarks/ke-tasks/graphvite
+	url = https://github.com/DeepGraphLearning/graphvite.git

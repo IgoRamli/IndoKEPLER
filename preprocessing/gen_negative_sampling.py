@@ -19,6 +19,8 @@ parser.add_argument('--true-tails', default='true_tails.txt', help='Output file 
 parser.add_argument('--num-proc', default=1, type=int, help='Number of threads to work in parallel')
 parser.add_argument('--out-dir', default='', help='Output directory to save dataset to')
 
+TRESHOLD = 10000  # Minimum number of rows to start consider multiprocessing
+
 def map_txt_to_dict(file):
   mapping = {}
   for line in tqdm(file):
@@ -78,8 +80,11 @@ def gen_negative_sampling(old_ds, new_ds, args, entities, true_head, true_tail):
       'nHeads': ns['head-batch'],
       'nTails': ns['tail-batch'],
     }
-  dataset = dataset.map(gen_triplets_with_negative_sampling,
-                        num_proc=args.num_proc)
+  if dataset.num_rows >= TRESHOLD:
+    dataset = dataset.map(gen_triplets_with_negative_sampling,
+                          num_proc=args.num_proc)
+  else:
+    dataset = dataset.map(gen_triplets_with_negative_sampling)
   print('| Saving dataset to "{}"'.format(new_ds))
   Path(new_ds).mkdir(parents=True, exist_ok=True)
   dataset.save_to_disk(new_ds)

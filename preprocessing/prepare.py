@@ -11,6 +11,8 @@ parser.add_argument('valid_file', help='Text file containing validation data')
 parser.add_argument('test_file', help='Text file containing testing data')
 parser.add_argument('--out-entity-file', default='./entities.txt', help='File name of entity descriptions')
 parser.add_argument('--out-dir', default='./csv', help='Directory to store CSV files')
+parser.add_argument('--entity-to-id-file', default='entity2id.json', help='File name of entity-to-id mappings in JSON format')
+parser.add_argument('--relation-to-id-file', default='relation2id.json', help='File name of relation-to-id mappings in JSON format')
 
 def get_entity_mappings(in_file, out_file):
   q_id = {}
@@ -49,6 +51,10 @@ class TripletConverter():
       out_line = { k: v for k,v in zip(triplet_fields, tmp)}
       writer.writerow(out_line)
 
+  def dump_mappings(self, entity_file, relation_file):
+    entity_file.write(json.dumps(self.q_id))
+    relation_file.write(json.dumps(self.p_id))
+
 
 if __name__ == '__main__':
   args = parser.parse_args()
@@ -76,3 +82,7 @@ if __name__ == '__main__':
     with open(args.out_dir + '/test.csv', 'w+') as out_file:
       converter.convert_triplets(in_file, out_file)
   print()
+  print('| Dump mappings')
+  with open(args.entity_to_id_file, 'w+') as entity_file:
+    with open(args.relation_to_id_file, 'w+') as relation_file:
+      converter.dump_mappings(entity_file, relation_file)

@@ -62,7 +62,7 @@ def fetch_sharded_dataset(path):
 def compile_dataset(mlm_data, ke_data):
   dataset_dict = {
     'train': RoundRobinDataset(mlm_data['train'], ke_data['train'], 'mlm_data', 'ke_data'),
-    'valid': RoundRobinDataset(mlm_data['valid'], ke_data['valid'], 'mlm_data', 'ke_data', 300),
+    'valid': RoundRobinDataset(mlm_data['valid'], ke_data['valid'], 'mlm_data', 'ke_data'),
     'test': RoundRobinDataset(mlm_data['test'], ke_data['test'], 'mlm_data', 'ke_data')
   }
   return DatasetDict(dataset_dict)
