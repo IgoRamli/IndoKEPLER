@@ -49,7 +49,7 @@ if __name__ == '__main__':
   entities = load_from_disk(args.entity_dir)
   entity_ids = []
   def extract_entities(row):
-    entity_ids.append(row)
+    entity_ids.append(row['input_ids'])
     return None
   entities.map(extract_entities)
 

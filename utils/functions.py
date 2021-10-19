@@ -89,4 +89,4 @@ def prepare_trainer(training_args, args):
     data_collator=get_data_collator(tokenizer),
     train_dataset=dataset['train'],
     eval_dataset=dataset['valid'])
-  return trainer, dataset['train'], dataset['valid']
+  return trainer
