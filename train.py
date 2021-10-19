@@ -1,7 +1,7 @@
 from os import listdir
 from transformers import HfArgumentParser, TrainingArguments
 
-from util.functions import prepare_trainer
+from utils.functions import prepare_trainer
 
 parser = HfArgumentParser(TrainingArguments)
 parser.add_argument('--model-name-or-path', required=True, help='Model and tokenizer name')

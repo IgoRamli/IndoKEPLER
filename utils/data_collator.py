@@ -18,10 +18,10 @@ class DataCollatorForKnowledgeEmbedding(DataCollatorMixin):
     batch_size = len(examples)
 
     def _extract_encoding(feature_name):
-      return [ ke[feature_name]['input_ids'] for ke in examples ]
+      return [ ke[feature_name] for ke in examples ]
 
     def _extract_nested_encoding(feature_name):
-      return [ [ i['input_ids'] for i in ke[feature_name] ] for ke in examples ]
+      return [ [ i for i in ke[feature_name] ] for ke in examples ]
 
     def _extract_embedding(feature_name):
       return [ ke[feature_name] for ke in examples ]

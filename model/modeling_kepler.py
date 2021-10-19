@@ -229,17 +229,29 @@ class KeplerModel(PreTrainedModel):
 
     def forward(
         self,
-        mlm_data,
-        ke_data,
+        mlm,
+        heads,
+        tails,
+        nHeads,
+        nTails,
+        heads_r,
+        tails_r,
+        relations,
+        relations_desc_emb=None,
         return_dict=None
     ):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        mlm_output = self.mlm_head(**mlm_data)
+        mlm_output = self.mlm_head(mlm)
 
-        pScore, nScore, ke_loss = None, None, None
-        if ke_data is not None:
-            pScore, nScore, ke_loss = self.ke_head(**ke_data)
+        pScore, nScore, ke_loss = self.ke_head(heads,
+                                               tails,
+                                               nHeads,
+                                               nTails,
+                                               heads_r,
+                                               tails_r,
+                                               relations,
+                                               relations_desc_emb=None)
             
         loss = None
         if ke_loss is not None and mlm_output.loss is not None:
