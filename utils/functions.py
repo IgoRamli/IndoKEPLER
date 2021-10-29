@@ -45,33 +45,6 @@ def load_model(model_name_or_path):
 def load_tokenizer(model_name_or_path):
   tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
   return tokenizer
-  
-def fetch_dataset(path):
-  splits = os.listdir(path)
-  return {
-    split: load_from_disk('{}/{}'.format(path, split)) \
-    for split in splits
-  }
-  
-def fetch_sharded_dataset(path):
-  splits = os.listdir(path)
-  dataset_dict = {
-    split: concatenate_datasets([
-      load_from_disk('{}/{}/{}'.format(path, split, shard_dir)) \
-      for shard_dir in os.listdir('{}/{}'.format(path, split)) \
-      if os.path.isdir('{}/{}/{}'.format(path, split, shard_dir))
-    ])
-    for split in splits
-  }
-  return DatasetDict(dataset_dict)
-  
-def compile_dataset(mlm_data, ke_data):
-  dataset_dict = {
-    'train': RoundRobinDataset(mlm_data['train'], ke_data['train'], 'mlm_data', 'ke_data'),
-    'valid': RoundRobinDataset(mlm_data['valid'], ke_data['valid'], 'mlm_data', 'ke_data'),
-    'test': RoundRobinDataset(mlm_data['test'], ke_data['test'], 'mlm_data', 'ke_data')
-  }
-  return DatasetDict(dataset_dict)
 
 def prepare_trainer(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
