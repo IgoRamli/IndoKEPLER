@@ -4,18 +4,17 @@ import gc
 import os
 
 from argparse import ArgumentParser
-from datasets import save_to_disk, load_from_disk, Dataset
+from datasets import load_from_disk, Dataset, concatenate_datasets, DatasetDict
 from tqdm import tqdm
 from pathlib import Path
 
-from ..utils.functions import load_sharded
 
 parser = ArgumentParser(description='Map entity ids into their tokenized form')
 parser.add_argument('--mlm-dir', default='mlm', help='Directory of MLM dataset')
 parser.add_argument('--ke-dir', default='ke', help='Directory of KE dataset')
 parser.add_argument('--out-dir', default='indokepler', help='Output directory to save datasets')
 
-def gen_round_robin(self, dataset_mlm, dataset_ke, max_len=-1):
+def gen_round_robin(dataset_mlm, dataset_ke, max_len=-1):
   total_len = max(len(dataset_mlm), len(dataset_ke))
   dataset_dict = {
     'mlm': [],
@@ -28,7 +27,7 @@ def gen_round_robin(self, dataset_mlm, dataset_ke, max_len=-1):
     'relations': []
   }
 
-  for idx in range(total_len):
+  for idx in tqdm(range(total_len)):
     idx_mlm = idx%len(dataset_mlm)
     idx_ke = idx%len(dataset_ke)
 

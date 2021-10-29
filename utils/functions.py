@@ -46,20 +46,30 @@ def load_tokenizer(model_name_or_path):
   tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
   return tokenizer
 
-def prepare_trainer(training_args, args):
+def prepare_trainer_for_indokepler(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
-
-  print('| Fetching MLM dataset')
-  mlm = fetch_dataset(args.mlm_dir)
-  print('| Fetching KE datasets')
-  ke = fetch_sharded_dataset(args.ke_dir)
-  print('| Combining datasets in round robin fashion')
-  dataset = compile_dataset(mlm, ke)
+  
+  dataset = load_from_disk(args.dataset)
 
   trainer = Trainer(
     model=load_model(args.model_name_or_path),
     args=training_args,
     data_collator=get_data_collator(tokenizer),
+    train_dataset=dataset['train'],
+    eval_dataset=dataset['valid'])
+  return trainer
+  
+
+def prepare_trainer_for_our_distilbert(training_args, args):
+  tokenizer = load_tokenizer(args.model_name_or_path)
+  
+  dataset = load_from_disk(args.dataset)
+  model = AutoModelForMaskedLM.from_pretrained(args.model_name_or_path)
+
+  trainer = Trainer(
+    model=model,
+    args=training_args,
+    data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer),
     train_dataset=dataset['train'],
     eval_dataset=dataset['valid'])
   return trainer
