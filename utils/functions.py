@@ -5,7 +5,8 @@ from transformers.data.data_collator import DataCollatorForLanguageModeling, def
 from transformers import (
   AutoTokenizer,
   AutoModel,
-  AutoModelForMaskedLM
+  AutoModelForMaskedLM,
+  Trainer
 )
 from utils.trainer import KeplerTrainer
 from model.modeling_kepler import KeplerModel
@@ -59,7 +60,7 @@ def prepare_trainer_for_indokepler(training_args, args):
   
   dataset = load_from_disk(args.dataset)
 
-  trainer = Trainer(
+  trainer = KeplerTrainer(
     model=load_model(args.model_name_or_path),
     args=training_args,
     data_collator=get_data_collator(tokenizer),
@@ -73,7 +74,7 @@ def prepare_trainer_for_our_distilbert(training_args, args):
   dataset = fetch_dataset(args.dataset)
   model = AutoModelForMaskedLM.from_pretrained(args.model_name_or_path)
 
-  trainer = KeplerTrainer(
+  trainer = Trainer(
     model=model,
     args=training_args,
     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer),
