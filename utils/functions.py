@@ -5,9 +5,9 @@ from transformers.data.data_collator import DataCollatorForLanguageModeling, def
 from transformers import (
   AutoTokenizer,
   AutoModel,
-  AutoModelForMaskedLM,
-  Trainer
+  AutoModelForMaskedLM
 )
+from utils.trainer import KeplerTrainer
 from model.modeling_kepler import KeplerModel
 from model.configuration_kepler import KeplerConfig
 
@@ -24,8 +24,6 @@ def get_data_collator(tokenizer):
     new_features = default_data_collator(features)
     mlm_feature = mlm_data_collator(slice(features, 'mlm'))
     new_features['mlm'] = mlm_feature
-    # new_features['mlm_input_ids'] = torch.tensor(mlm_feature['input_ids'])
-    # new_features['mlm_labels'] = torch.tensor(mlm_feature['labels'])
 
     encoding_size = new_features['heads'].shape[1]
     new_features['nHeads'] = new_features['nHeads'].view((-1, encoding_size))
@@ -36,11 +34,10 @@ def get_data_collator(tokenizer):
 def load_model(model_name_or_path):
   if 'distilbert' in model_name_or_path:
     print('| Loading model "{}"'.format(model_name_or_path))
-    mlm_model = AutoModelForMaskedLM.from_pretrained(model_name_or_path)
-    base_model = mlm_model.distilbert
+    distilbert_for_masked_lm = AutoModelForMaskedLM.from_pretrained(model_name_or_path)
 
-    config = KeplerConfig(embedding_size=base_model.config.dim)
-    model = KeplerModel(config, base_model, mlm_model)
+    config = KeplerConfig(embedding_size=distilbert_for_masked_lm.config.dim)
+    model = KeplerModel(config, distilbert_for_masked_lm)
     return model
   else:
     raise NotImplementedError('Only distilbert models can be loaded into KEPLER')
@@ -76,7 +73,7 @@ def prepare_trainer_for_our_distilbert(training_args, args):
   dataset = fetch_dataset(args.dataset)
   model = AutoModelForMaskedLM.from_pretrained(args.model_name_or_path)
 
-  trainer = Trainer(
+  trainer = KeplerTrainer(
     model=model,
     args=training_args,
     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer),
