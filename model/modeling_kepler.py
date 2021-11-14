@@ -163,14 +163,14 @@ class KeplerKEHead(nn.Module):
         else:
             relations = self.relation_embedding(relations).unsqueeze(1)
 
-        heads = heads.type(torch.FloatTensor)
-        tails = tails.type(torch.FloatTensor)
-        nHeads = nHeads.type(torch.FloatTensor)
-        nTails = nTails.type(torch.FloatTensor)
-        heads_r = heads_r.type(torch.FloatTensor)
-        tails_r = tails_r.type(torch.FloatTensor)
+        heads = heads.type(torch.cuda.FloatTensor)
+        tails = tails.type(torch.cuda.FloatTensor)
+        nHeads = nHeads.type(torch.cuda.FloatTensor)
+        nTails = nTails.type(torch.cuda.FloatTensor)
+        heads_r = heads_r.type(torch.cuda.FloatTensor)
+        tails_r = tails_r.type(torch.cuda.FloatTensor)
 
-        relations = relations.type(torch.FloatTensor)
+        relations = relations.type(torch.cuda.FloatTensor)
 
         pScores = (self.score_function(heads_r, relations, tails) + self.score_function(heads, relations, tails_r)) / 2.0
         nHScores = self.score_function(nHeads, relations, tails_r)
@@ -242,7 +242,7 @@ class KeplerModel(PreTrainedModel):
     ):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        mlm_output = self.mlm_head(mlm)
+        mlm_output = self.mlm_head(**mlm)
 
         pScore, nScore, ke_loss = self.ke_head(heads,
                                                tails,
@@ -251,8 +251,8 @@ class KeplerModel(PreTrainedModel):
                                                heads_r,
                                                tails_r,
                                                relations,
-                                               relations_desc_emb=None)
-            
+                                               relations_desc=None)
+
         loss = None
         if ke_loss is not None and mlm_output.loss is not None:
             loss = mlm_output.loss + ke_loss

@@ -1,6 +1,6 @@
 import os
 import torch
-from datasets import load_from_disk, concatenate_datasets, DatasetDict
+from datasets import load_from_disk, concatenate_datasets, DatasetDict, Dataset
 from transformers.data.data_collator import DataCollatorForLanguageModeling, default_data_collator
 from transformers import (
   AutoTokenizer,
@@ -16,18 +16,21 @@ from .dataset import RoundRobinDataset
 
 
 def get_data_collator(tokenizer):
+  def slice(data, column, new_col_name=None):
+    return [ d[column] for d in data ]
+
   def custom_data_collator(features):
     mlm_data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer)
-    return {
-      'mlm': mlm_data_collator(features['mlm']),
-      'heads': default_data_collator(features['heads']),
-      'tails': default_data_collator(features['tails']),
-      'heads_r': default_data_collator(features['heads_r']),
-      'tails_r': default_data_collator(features['tails_r']),
-      'nHeads': default_data_collator(features['nHeads']),
-      'nTails': default_data_collator(features['nTails']),
-      'relations': torch.IntTensor(features['relations'])
-    }
+    new_features = default_data_collator(features)
+    mlm_feature = mlm_data_collator(slice(features, 'mlm'))
+    new_features['mlm'] = mlm_feature
+    # new_features['mlm_input_ids'] = torch.tensor(mlm_feature['input_ids'])
+    # new_features['mlm_labels'] = torch.tensor(mlm_feature['labels'])
+
+    encoding_size = new_features['heads'].shape[1]
+    new_features['nHeads'] = new_features['nHeads'].view((-1, encoding_size))
+    new_features['nTails'] = new_features['nTails'].view((-1, encoding_size))
+    return new_features
   return custom_data_collator
 
 def load_model(model_name_or_path):
@@ -46,6 +49,14 @@ def load_tokenizer(model_name_or_path):
   tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
   return tokenizer
 
+def fetch_dataset(path):
+  splits = os.listdir(path)
+  dataset_dict = {
+    split: load_from_disk('{}/{}'.format(path, split)) \
+    for split in splits
+  }
+  return DatasetDict(dataset_dict)
+
 def prepare_trainer_for_indokepler(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
   
@@ -58,12 +69,11 @@ def prepare_trainer_for_indokepler(training_args, args):
     train_dataset=dataset['train'],
     eval_dataset=dataset['valid'])
   return trainer
-  
 
 def prepare_trainer_for_our_distilbert(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
   
-  dataset = load_from_disk(args.dataset)
+  dataset = fetch_dataset(args.dataset)
   model = AutoModelForMaskedLM.from_pretrained(args.model_name_or_path)
 
   trainer = Trainer(

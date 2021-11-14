@@ -8,7 +8,6 @@ from datasets import load_from_disk, Dataset, concatenate_datasets, DatasetDict
 from tqdm import tqdm
 from pathlib import Path
 
-
 parser = ArgumentParser(description='Map entity ids into their tokenized form')
 parser.add_argument('--mlm-dir', default='mlm', help='Directory of MLM dataset')
 parser.add_argument('--ke-dir', default='ke', help='Directory of KE dataset')
