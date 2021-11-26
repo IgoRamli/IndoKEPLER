@@ -66,6 +66,21 @@ def prepare_trainer_for_indokepler(training_args, args):
     eval_dataset=dataset['valid'])
   return trainer
 
+def compute_metrics(eval_predictions):
+  outputs, _ = eval_predictions
+  loss = outputs["loss"].mean().detach()
+  mlm_loss = outputs["mlm_loss"].mean().detach()
+  ke_loss = outputs["ke_loss"].mean().detach()
+  p_score = outputs["pScore"].mean().detach()
+  n_score = outputs["nScore"].mean().detach()
+  return {
+    'loss': loss,
+    'mlm_loss': mlm_loss,
+    'ke_loss': ke_loss,
+    'pScore': p_score,
+    'nScore': n_score
+  }
+
 def prepare_trainer_for_our_distilbert(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
   
@@ -76,6 +91,7 @@ def prepare_trainer_for_our_distilbert(training_args, args):
     model=model,
     args=training_args,
     data_collator=DataCollatorForLanguageModeling(tokenizer=tokenizer),
+    compute_metrics=compute_metrics,
     train_dataset=dataset['train'],
     eval_dataset=dataset['valid'])
   return trainer
