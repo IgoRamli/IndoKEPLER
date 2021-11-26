@@ -53,6 +53,12 @@ class KeplerModel(DistilBertForMaskedLM):
         }
         self.score_function = model_func[config.ke_model]
 
+    def get_input_embeddings(self):
+        return self.distilbert.embeddings.word_embeddings
+
+    def set_input_embeddings(self, new_embeddings):
+        self.distilbert.embeddings.word_embeddings = new_embeddings
+
     def TransE(self, head, relation, tail):
         score = (head + relation) - tail
         score = self.gamma.item() - torch.norm(score, p=2, dim=2)
