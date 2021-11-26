@@ -55,17 +55,11 @@ def fetch_dataset(path):
 
 def compute_metrics(eval_predictions):
   outputs, _ = eval_predictions
-  loss = outputs["loss"].mean().detach()
-  mlm_loss = outputs["mlm_loss"].mean().detach()
-  ke_loss = outputs["ke_loss"].mean().detach()
-  p_score = outputs["pScore"].mean().detach()
-  n_score = outputs["nScore"].mean().detach()
+  mlm_loss = outputs[0].mean().detach()
+  ke_loss = outputs[1].mean().detach()
   return {
-    'loss': loss,
     'mlm_loss': mlm_loss,
     'ke_loss': ke_loss,
-    'pScore': p_score,
-    'nScore': n_score
   }
 
 def prepare_trainer_for_indokepler(training_args, args):

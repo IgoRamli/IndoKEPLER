@@ -191,13 +191,11 @@ class KeplerModel(DistilBertForMaskedLM):
             loss = mlm_output.loss + ke_loss
 
         if not return_dict:
-            output = torch.cat(mlm_output.loss, ke_loss)
+            output = (torch.unsqueeze(mlm_output.loss, -1), torch.unsqueeze(ke_loss, -1))
             return ((loss,) + output) if loss is not None else output
 
         return KeplerForPreTrainingOutput(
             loss=loss,
-            mlm_loss=mlm_output.loss,
-            ke_loss=ke_loss,
-            pScore=pScore,
-            nScore=nScore,
+            mlm_loss=torch.unsqueeze(mlm_output.loss, -1),
+            ke_loss=torch.unsqueeze(ke_loss, -1)
         )
