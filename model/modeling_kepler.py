@@ -5,11 +5,10 @@ import torch.utils.checkpoint
 from torch import nn
 import torch.nn.functional as F
 
-from transformers import PreTrainedModel, logging
+from transformers import DistilBertForMaskedLM, logging
 from transformers.file_utils import ModelOutput
 from transformers.modeling_outputs import MaskedLMOutput
 from transformers.activations import gelu
-from transformers.utils.dummy_pt_objects import DistilBertForMaskedLM
 from .configuration_kepler import KeplerConfig
 
 logger = logging.get_logger(__name__)
@@ -39,10 +38,10 @@ class KeplerModel(DistilBertForMaskedLM):
         )
         self.eps = 2.0
         self.embedding_range = nn.Parameter(
-            torch.Tensor([(self.gamma.item() + self.eps) / config.embedding_size]),
+            torch.Tensor([(self.gamma.item() + self.eps) / config.dim]),
             requires_grad = False
         )
-        self.relation_embedding = nn.Embedding(config.nrelation, config.embedding_size)
+        self.relation_embedding = nn.Embedding(config.nrelation, config.dim)
         nn.init.uniform_(
             tensor = self.relation_embedding.weight,
             a = -self.embedding_range.item(),
@@ -65,8 +64,8 @@ class KeplerModel(DistilBertForMaskedLM):
         heads_r = heads_r[:, 0, :].unsqueeze(1)
         tails_r = tails_r[:, 0, :].unsqueeze(1)
 
-        nHeads = nHeads[:, 0, :].view(heads.size(0), -1, self.config.embedding_size)
-        nTails = nTails[:, 0, :].view(tails.size(0), -1, self.config.embedding_size)
+        nHeads = nHeads[:, 0, :].view(heads.size(0), -1, self.config.dim)
+        nTails = nTails[:, 0, :].view(tails.size(0), -1, self.config.dim)
 
         if relations_desc_emb is not None:
             relations = relations_desc_emb[:, 0, :].unsqueeze(1)
