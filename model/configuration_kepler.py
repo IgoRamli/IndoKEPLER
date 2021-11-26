@@ -1,7 +1,7 @@
 """ KEPLER Knowledge Embedding model configuration """
-from transformers import DistilBertConfig
+from transformers import PretrainedConfig
 
-class KeplerConfig(DistilBertConfig):
+class KeplerConfig(PretrainedConfig):
     model_type = "kepler"
 
     def __init__(
