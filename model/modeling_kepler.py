@@ -9,6 +9,7 @@ from transformers import PreTrainedModel, logging
 from transformers.file_utils import ModelOutput
 from transformers.modeling_outputs import MaskedLMOutput
 from transformers.activations import gelu
+from transformers.utils.dummy_pt_objects import DistilBertForMaskedLM
 from .configuration_kepler import KeplerConfig
 
 logger = logging.get_logger(__name__)
@@ -21,22 +22,14 @@ class KeplerForPreTrainingOutput(ModelOutput):
     nScore: torch.FloatTensor = None
 
 
-class KeplerModel(PreTrainedModel):
+class KeplerModel(DistilBertForMaskedLM):
     config_class = KeplerConfig
     base_model_prefix = "kepler"
 
-    def __init__(self, config, distilbert_for_masked_lm):
+    def __init__(self, config):
         super().__init__(config)
 
-        self.encoder = distilbert_for_masked_lm.distilbert
         self.config = config
-
-        # MLM configuration
-        self.vocab_transform = distilbert_for_masked_lm.vocab_transform
-        self.vocab_layer_norm = distilbert_for_masked_lm.vocab_layer_norm
-        self.vocab_projector = distilbert_for_masked_lm.vocab_projector
-
-        self.mlm_loss_fct = nn.CrossEntropyLoss()
 
         # KE configuration
         self.nrelation = config.nrelation
@@ -97,17 +90,17 @@ class KeplerModel(PreTrainedModel):
 
     def ke_forward(self, heads, tails, nHeads, nTails, heads_r, tails_r, relations, relations_desc, relation_desc_emb=None, **kwargs):
         if relations_desc is not None:
-            relation_desc_emb, _ = self.encoder(relations)  # Relations is encoded
+            relation_desc_emb, _ = self.distilbert(relations)  # Relations is encoded
         else:
             relation_desc_emb = None # Relation is embedded
 
         ke_states = {
-            'heads': self.encoder(heads)[0],
-            'tails': self.encoder(tails)[0],
-            'nHeads': self.encoder(nHeads)[0],
-            'nTails': self.encoder(nTails)[0],
-            'heads_r': self.encoder(heads_r)[0],
-            'tails_r': self.encoder(tails_r)[0],
+            'heads': self.distilbert(heads)[0],
+            'tails': self.distilbert(tails)[0],
+            'nHeads': self.distilbert(nHeads)[0],
+            'nTails': self.distilbert(nTails)[0],
+            'heads_r': self.distilbert(heads_r)[0],
+            'tails_r': self.distilbert(tails_r)[0],
             'relations': relations,
             'relations_desc_emb': relation_desc_emb,
         }
@@ -132,7 +125,7 @@ class KeplerModel(PreTrainedModel):
     ):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        encoder_output = self.encoder(
+        dlbrt_output = self.distilbert(
             input_ids=input_ids,
             attention_mask=attention_mask,
             head_mask=head_mask,
@@ -141,7 +134,7 @@ class KeplerModel(PreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
-        hidden_states = encoder_output[0]  # (bs, seq_length, dim)
+        hidden_states = dlbrt_output[0]  # (bs, seq_length, dim)
         prediction_logits = self.vocab_transform(hidden_states)  # (bs, seq_length, dim)
         prediction_logits = gelu(prediction_logits)  # (bs, seq_length, dim)
         prediction_logits = self.vocab_layer_norm(prediction_logits)  # (bs, seq_length, dim)
@@ -152,14 +145,14 @@ class KeplerModel(PreTrainedModel):
             mlm_loss = self.mlm_loss_fct(prediction_logits.view(-1, prediction_logits.size(-1)), labels.view(-1))
 
         if not return_dict:
-            output = (prediction_logits,) + encoder_output[1:]
+            output = (prediction_logits,) + dlbrt_output[1:]
             return ((mlm_loss,) + output) if mlm_loss is not None else output
 
         return MaskedLMOutput(
             loss=mlm_loss,
             logits=prediction_logits,
-            hidden_states=encoder_output.hidden_states,
-            attentions=encoder_output.attentions,
+            hidden_states=dlbrt_output.hidden_states,
+            attentions=dlbrt_output.attentions,
         )
 
     def forward(

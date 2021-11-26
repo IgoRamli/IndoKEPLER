@@ -1,22 +1,47 @@
 """ KEPLER Knowledge Embedding model configuration """
-from transformers import PretrainedConfig
+from transformers import DistilBertConfig
 
-class KeplerConfig(PretrainedConfig):
+class KeplerConfig(DistilBertConfig):
     model_type = "kepler"
 
     def __init__(
         self,
-        embedding_size=768,
         vocab_size=30522,
+        max_position_embeddings=512,
+        sinusoidal_pos_embds=False,
+        n_layers=6,
+        n_heads=12,
+        dim=768,
+        hidden_dim=4 * 768,
+        dropout=0.1,
+        attention_dropout=0.1,
+        activation="gelu",
+        initializer_range=0.02,
+        qa_dropout=0.1,
+        seq_classif_dropout=0.2,
+        pad_token_id=0,
         nrelation=1000,
         gamma=4,
         ke_model='TransE',
         **kwargs
     ):
-        super().__init__(**kwargs)
-        
-        self.embedding_size = embedding_size  # Must be equal to size of last hidden state
-        self.vocab_size = vocab_size  # Must be equal to size of vocabulary
+        # DistilBert Configuration
+        self.vocab_size = vocab_size
+        self.max_position_embeddings = max_position_embeddings
+        self.sinusoidal_pos_embds = sinusoidal_pos_embds
+        self.n_layers = n_layers
+        self.n_heads = n_heads
+        self.dim = dim
+        self.hidden_dim = hidden_dim
+        self.dropout = dropout
+        self.attention_dropout = attention_dropout
+        self.activation = activation
+        self.initializer_range = initializer_range
+        self.qa_dropout = qa_dropout
+        self.seq_classif_dropout = seq_classif_dropout
+
+        # KE Configuration
         self.nrelation = nrelation  # Number of distinct relations
         self.gamma = gamma
         self.ke_model = ke_model
+        super().__init__(**kwargs, pad_token_id=pad_token_id)

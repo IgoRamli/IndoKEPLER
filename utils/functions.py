@@ -35,10 +35,8 @@ def get_data_collator(tokenizer):
 def load_model(model_name_or_path):
   if 'distilbert' in model_name_or_path:
     print('| Loading model "{}"'.format(model_name_or_path))
-    distilbert_for_masked_lm = AutoModelForMaskedLM.from_pretrained(model_name_or_path)
 
-    config = KeplerConfig(embedding_size=distilbert_for_masked_lm.config.dim)
-    model = KeplerModel(config, distilbert_for_masked_lm)
+    model = KeplerModel.from_pretrained(model_name_or_path)
     return model
   else:
     raise NotImplementedError('Only distilbert models can be loaded into KEPLER')
@@ -60,7 +58,7 @@ def prepare_trainer_for_indokepler(training_args, args):
   
   dataset = load_from_disk(args.dataset)
 
-  trainer = KeplerTrainer(
+  trainer = Trainer(
     model=load_model(args.model_name_or_path),
     args=training_args,
     data_collator=get_data_collator(tokenizer),
