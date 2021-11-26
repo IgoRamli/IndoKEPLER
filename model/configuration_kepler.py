@@ -3,6 +3,11 @@ from transformers import PretrainedConfig
 
 class KeplerConfig(PretrainedConfig):
     model_type = "kepler"
+    attribute_map = {
+        "hidden_size": "dim",
+        "num_attention_heads": "n_heads",
+        "num_hidden_layers": "n_layers",
+    }
 
     def __init__(
         self,
