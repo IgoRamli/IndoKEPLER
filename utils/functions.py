@@ -55,8 +55,8 @@ def fetch_dataset(path):
 
 def compute_metrics(eval_predictions):
   outputs, _ = eval_predictions
-  mlm_loss = outputs[0].mean().detach()
-  ke_loss = outputs[1].mean().detach()
+  mlm_loss = outputs[0].mean()
+  ke_loss = outputs[1].mean()
   return {
     'mlm_loss': mlm_loss,
     'ke_loss': ke_loss,
