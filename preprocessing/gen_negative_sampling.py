@@ -4,7 +4,7 @@ import gc
 import os
 
 from argparse import ArgumentParser
-from datasets import load_from_disk
+from datasets import load_from_disk, load_dataset
 from tqdm import tqdm
 from pathlib import Path
 
@@ -116,8 +116,8 @@ if __name__ == '__main__':
 
   for ds in ds_mapping:
     print('| Getting entity candidates')
-    with open('{}/../entities.txt'.format(ds[0]), 'r') as ent_file:
-      entities = ent_file.readlines()
+    entities = load_dataset('text', f'{ds[0]}/../entities.txt')['text']
+    entities = [ int(i) for i in entities ]
     print('| {} entities found'.format(len(entities)))
     gen_negative_sampling(ds[0], ds[1], args, entities, true_heads, true_tails)
     gc.collect()
