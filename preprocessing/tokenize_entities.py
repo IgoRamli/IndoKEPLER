@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
+from datasets import Dataset
 from transformers import AutoTokenizer
-from datasets import load_dataset
+from tqdm import tqdm
 
 parser = ArgumentParser(description='Tokenize KE entities')
 parser.add_argument('text_file', help='Text file containing entity descriptions')
@@ -19,18 +20,14 @@ if __name__ == '__main__':
                           max_length=args.max_length,
                           padding='max_length',
                           truncation=True)
-    return { 'input_ids': tokenized['input_ids'] }
+    return tokenized['input_ids']
 
-  print('| Reading dataset')
-  raw_dataset = load_dataset('text',
-                             split='train',
-                             data_files=args.text_file)
-  print('| Tokenizing KE entities')
-  print('| Number of entities: {}'.format(raw_dataset.num_rows))
-  entities = raw_dataset.map(tokenize_text,
-                             batched=True,
-                             num_proc=args.num_proc,
-                             remove_columns=['text'])
+  print('| Tokenizing dataset')
+  entities = []
+  with open(args.text_file, 'r') as f:
+    for line in tqdm(f):
+      entities.append(tokenize_text(f))
+  ds = Dataset.from_dict({ 'input_ids': entities })
   print('| Saving dataset')
-  entities.save_to_disk(args.out_dir)
+  ds.save_to_disk(args.out_dir)
   print('| Tokenized entities saved to "{}"'.format(args.out_dir))
