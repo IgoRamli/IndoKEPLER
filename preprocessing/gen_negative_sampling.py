@@ -73,12 +73,12 @@ def gen_negative_sampling(old_ds, new_ds, args, entities, true_head, true_tail):
         negative_sample_list += negative_sample.tolist()
         mask, negative_sample = None, None  # Optimize RAM usage
       ns[mode] = negative_sample_list[:args.ns]
-      for false_head in ns['head-batch']:
-        assert(false_head not in true_head[(relation, tail)])
-      for false_tail in ns['tail-batch']:
-        assert(false_tail not in true_tail[(head, relation)])
       negative_sample_list = None  # Optimize RAM usage
       assert(len(ns[mode]) == args.ns)
+    for false_head in ns['head-batch']:
+      assert(false_head not in true_head[(relation, tail)])
+    for false_tail in ns['tail-batch']:
+      assert(false_tail not in true_tail[(head, relation)])
 
     return {
       'nHeads': ns['head-batch'],
