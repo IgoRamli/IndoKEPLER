@@ -36,19 +36,13 @@ def fetch_sharded_dataset(path):
   return DatasetDict(dataset_dict)
 
 def compile_dataset(args, mlm_data, ke_data):
-  pair_with_mlm = {
-    split: lambda example, index : {
-      'mlm': mlm_data[split][index%len(mlm_data[split])]['input_ids'],
-      **example
-    }
-    for split in ['train', 'valid', 'test']
-  }
-
   # Number of entities is usually smaller than number of knowledge triplets
-  dataset_dict = {
-    split: ke_data[split].map(pair_with_mlm[split], with_indices=True, num_proc=args.num_proc)
-    for split in ['train', 'valid', 'test']
-  }
+  dataset_dict = {}
+  for split in ['train', 'valid', 'test']:
+    def pair_with_mlm(example, index):
+      return { 'mlm': mlm_data[split][index%len(mlm_data[split])]['input_ids'], **example }
+    
+    dataset_dict[split] = ke_data[split].map(pair_with_mlm, with_indices=True, num_proc=args.num_proc)
   return DatasetDict(dataset_dict)
 
 if __name__ == '__main__':
