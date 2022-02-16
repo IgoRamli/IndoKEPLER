@@ -4,7 +4,7 @@ import gc
 import os
 
 from argparse import ArgumentParser
-from datasets import load_from_disk
+from datasets import load_from_disk, load_dataset
 from tqdm import tqdm
 from pathlib import Path
 
@@ -75,6 +75,10 @@ def gen_negative_sampling(old_ds, new_ds, args, entities, true_head, true_tail):
       ns[mode] = negative_sample_list[:args.ns]
       negative_sample_list = None  # Optimize RAM usage
       assert(len(ns[mode]) == args.ns)
+    for false_head in ns['head-batch']:
+      assert(false_head not in true_head[(relation, tail)])
+    for false_tail in ns['tail-batch']:
+      assert(false_tail not in true_tail[(head, relation)])
 
     return {
       'nHeads': ns['head-batch'],
@@ -116,8 +120,10 @@ if __name__ == '__main__':
 
   for ds in ds_mapping:
     print('| Getting entity candidates')
-    with open('{}/../entities.txt'.format(ds[0]), 'r') as ent_file:
-      entities = ent_file.readlines()
+    entities = []
+    with open(f'{ds[0]}/../entities.txt', 'r') as f:
+      for line in f:
+        entities.append(int(line))
     print('| {} entities found'.format(len(entities)))
     gen_negative_sampling(ds[0], ds[1], args, entities, true_heads, true_tails)
     gc.collect()

@@ -16,7 +16,6 @@ parser.add_argument('--end', required=False, type=int, help='Index of the last s
 parser.add_argument('--num-proc', default=1, type=int, help='Number of processes to be generated')
 parser.add_argument('--out-dir', default='', help='Output directory to save datasets')
 
-
 def process_dataset(args, old_ds, new_ds, entities):
   print('| Loading dataset "{}"'.format(old_ds))
   dataset = load_from_disk(old_ds)
@@ -26,17 +25,18 @@ def process_dataset(args, old_ds, new_ds, entities):
   #  print('Map triplet ({},{},{})'.format(batch['head'], batch['tail'], batch['relation']))
   #  print('{} {}'.format(batch['nHeads'], batch['nTails']))
     mapped_dict = {
-      'heads': entities[batch['head']],
-      'tails': entities[batch['tail']],
+      'heads': entities[batch['head']]['input_ids'],
+      'tails': entities[batch['tail']]['input_ids'],
       'relations': batch['relation'],
-      'heads_r': entities[batch['head']],
-      'tails_r': entities[batch['tail']],
-      'nHeads': [ entities[int(i)] for i in batch['nHeads'] ],
-      'nTails': [ entities[int(i)] for i in batch['nTails'] ],
+      'heads_r': entities[batch['head']]['input_ids'],
+      'tails_r': entities[batch['tail']]['input_ids'],
+      'nHeads': [ entities[int(i)]['input_ids'] for i in batch['nHeads'] ],
+      'nTails': [ entities[int(i)]['input_ids'] for i in batch['nTails'] ],
     }
     return mapped_dict
   dataset = dataset.map(map_entities,
-                        remove_columns=['head', 'relation', 'tail'])
+                        remove_columns=['head', 'relation', 'tail'],
+                        num_proc=args.num_proc)
   print('| Saving dataset to "{}"'.format(new_ds))
   Path(new_ds).mkdir(parents=True, exist_ok=True)
   dataset.save_to_disk(new_ds)
@@ -47,11 +47,6 @@ if __name__ == '__main__':
 
   print('| Getting entities')
   entities = load_from_disk(args.entity_dir)
-  entity_ids = []
-  def extract_entities(row):
-    entity_ids.append(row['input_ids'])
-    return None
-  entities.map(extract_entities)
 
   ds_mapping = []
   ds_splits = os.listdir(args.data_dir)
@@ -67,5 +62,5 @@ if __name__ == '__main__':
     print('| - {}\t=>\t{}'.format(ds[0], ds[1]))
 
   for ds in ds_mapping:
-    process_dataset(args, ds[0], ds[1], entity_ids)
+    process_dataset(args, ds[0], ds[1], entities)
     gc.collect()

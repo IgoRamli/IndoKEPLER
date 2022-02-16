@@ -8,6 +8,7 @@ from transformers import (
   AutoModelForMaskedLM,
   Trainer
 )
+from utils.trainer import KeplerTrainer
 from model.modeling_kepler import KeplerModel
 from model.configuration_kepler import KeplerConfig
 
@@ -24,8 +25,6 @@ def get_data_collator(tokenizer):
     new_features = default_data_collator(features)
     mlm_feature = mlm_data_collator(slice(features, 'mlm'))
     new_features['mlm'] = mlm_feature
-    # new_features['mlm_input_ids'] = torch.tensor(mlm_feature['input_ids'])
-    # new_features['mlm_labels'] = torch.tensor(mlm_feature['labels'])
 
     encoding_size = new_features['heads'].shape[1]
     new_features['nHeads'] = new_features['nHeads'].view((-1, encoding_size))
@@ -36,11 +35,8 @@ def get_data_collator(tokenizer):
 def load_model(model_name_or_path):
   if 'distilbert' in model_name_or_path:
     print('| Loading model "{}"'.format(model_name_or_path))
-    mlm_model = AutoModelForMaskedLM.from_pretrained(model_name_or_path)
-    base_model = mlm_model.distilbert
 
-    config = KeplerConfig(embedding_size=base_model.config.dim)
-    model = KeplerModel(config, base_model, mlm_model)
+    model = KeplerModel.from_pretrained(model_name_or_path)
     return model
   else:
     raise NotImplementedError('Only distilbert models can be loaded into KEPLER')
@@ -57,6 +53,15 @@ def fetch_dataset(path):
   }
   return DatasetDict(dataset_dict)
 
+def compute_metrics(eval_predictions):
+  outputs, _ = eval_predictions
+  mlm_loss = outputs[0].mean()
+  ke_loss = outputs[1].mean()
+  return {
+    'mlm_loss': mlm_loss,
+    'ke_loss': ke_loss,
+  }
+
 def prepare_trainer_for_indokepler(training_args, args):
   tokenizer = load_tokenizer(args.model_name_or_path)
   
@@ -66,6 +71,7 @@ def prepare_trainer_for_indokepler(training_args, args):
     model=load_model(args.model_name_or_path),
     args=training_args,
     data_collator=get_data_collator(tokenizer),
+    compute_metrics=compute_metrics,
     train_dataset=dataset['train'],
     eval_dataset=dataset['valid'])
   return trainer

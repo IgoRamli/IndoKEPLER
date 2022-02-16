@@ -12,34 +12,9 @@ parser = ArgumentParser(description='Map entity ids into their tokenized form')
 parser.add_argument('--mlm-dir', default='mlm', help='Directory of MLM dataset')
 parser.add_argument('--ke-dir', default='ke', help='Directory of KE dataset')
 parser.add_argument('--out-dir', default='indokepler', help='Output directory to save datasets')
+parser.add_argument('--max-len', default=-1, type=int, help='Maximum number of data to be stored. Use this to sample the first bunch of data')
+parser.add_argument('--num-proc', default=1, type=int, help='Number of threads to process dataset')
 
-def gen_round_robin(dataset_mlm, dataset_ke, max_len=-1):
-  total_len = max(len(dataset_mlm), len(dataset_ke))
-  dataset_dict = {
-    'mlm': [],
-    'heads': [],
-    'tails': [],
-    'heads_r': [],
-    'tails_r': [],
-    'nHeads': [],
-    'nTails': [],
-    'relations': []
-  }
-
-  for idx in tqdm(range(total_len)):
-    idx_mlm = idx%len(dataset_mlm)
-    idx_ke = idx%len(dataset_ke)
-
-    dataset_dict['mlm'].append(dataset_mlm[idx_mlm]['input_ids'])
-    dataset_dict['heads'].append(dataset_ke[idx_ke]['heads'])
-    dataset_dict['tails'].append(dataset_ke[idx_ke]['tails'])
-    dataset_dict['heads_r'].append(dataset_ke[idx_ke]['heads_r'])
-    dataset_dict['tails_r'].append(dataset_ke[idx_ke]['tails_r'])
-    dataset_dict['nHeads'].append(dataset_ke[idx_ke]['nHeads'])
-    dataset_dict['nTails'].append(dataset_ke[idx_ke]['nTails'])
-    dataset_dict['relations'].append(dataset_ke[idx_ke]['relations'])
-  return dataset_dict
-  
 def fetch_dataset(path):
   splits = os.listdir(path)
   dataset_dict = {
@@ -47,7 +22,7 @@ def fetch_dataset(path):
     for split in splits
   }
   return DatasetDict(dataset_dict)
-  
+
 def fetch_sharded_dataset(path):
   splits = os.listdir(path)
   dataset_dict = {
@@ -59,13 +34,15 @@ def fetch_sharded_dataset(path):
     for split in splits
   }
   return DatasetDict(dataset_dict)
-  
-def compile_dataset(mlm_data, ke_data):
-  dataset_dict = {
-    'train': Dataset.from_dict(gen_round_robin(mlm_data['train'], ke_data['train'])),
-    'valid': Dataset.from_dict(gen_round_robin(mlm_data['valid'], ke_data['valid'])),
-    'test': Dataset.from_dict(gen_round_robin(mlm_data['test'], ke_data['test']))
-  }
+
+def compile_dataset(args, mlm_data, ke_data):
+  # Number of entities is usually smaller than number of knowledge triplets
+  dataset_dict = {}
+  for split in ['train', 'valid', 'test']:
+    def pair_with_mlm(example, index):
+      return { 'mlm': mlm_data[split][index%len(mlm_data[split])]['input_ids'], **example }
+    
+    dataset_dict[split] = ke_data[split].map(pair_with_mlm, with_indices=True, num_proc=args.num_proc)
   return DatasetDict(dataset_dict)
 
 if __name__ == '__main__':
@@ -76,5 +53,7 @@ if __name__ == '__main__':
   print('| Fetching KE datasets')
   ke = fetch_sharded_dataset(args.ke_dir)
   print('| Combining datasets in round robin fashion')
-  dataset = compile_dataset(mlm, ke)
+  dataset = compile_dataset(args, mlm, ke)
+  print(f"| Final columns {dataset['train']}")
+  print('| Saving dataset')
   dataset.save_to_disk(args.out_dir)
